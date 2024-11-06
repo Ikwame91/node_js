@@ -1,22 +1,44 @@
 
 
-//npm - global command, comes with node
-//npm  --version
+// const { result } = require("lodash");
 
-// local dependency -use it in only in this particular project 
-//
-
-// global dependency -use it in any project 
-//npm install -g <packageName>
+const { readFile, writeFile } = require("fs").promises
+// const util = require('util')
+// const readFilePromise = util.promisify(readFile)
+// const writeFilePromise = util.promisify(writeFile)
 
 
-// package.json -- manifest file(stores important info about project/package)
-//manual approach (create package.json in the root , create properties etc)
-//npm init (step by step , press enter to skip)
-//npm init --y ( everything default)
 
-const _ = require('lodash');
+const start = async () => {
+    try {
+        const first = await readFile('./content/first.txt', 'utf8')
+        const second = await readFile('./content/second.txt', 'utf8')
+        await writeFile(
+            './content/result-mind-grenade.txt',
+            `THIS IS AWESOME : ${first} ${second}`,
+            { flag: 'a' }
+        )
+        console.log(first, second)
+    } catch (error) {
+        console.log(error)
+    }
+}
 
-const items = [1, [2, [3, [4]]]]
-const newItems = _.flattenDeep(items)
-console.log(newItems)
+start()
+
+
+
+// const getText = (path) => {
+//     return new Promise((resole, reject) => {
+//         readFile(path, "utf-8", (err, data) => {
+//             if (err) {
+//                 reject(err);
+//             } else {
+//                 resole(data);
+//             }
+//         });
+//     });
+// };
+// getText("./content/result-sync.txt")
+//     .then((result) => console.log(result))
+//     .catch((err) => console.log(err));
