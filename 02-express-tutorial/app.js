@@ -1,28 +1,35 @@
 const express = require("express");
-const logger = require('./practice/logger')
 const app = express();
-const authorize = require('./practice/authorize')
-app.use([logger,authorize])
+let { people } = require("./data");
 
-// req => middleware => res
+app.use(express.static("./methods-public"));
+//parse form data
+app.use(express.urlencoded({ extended: false }));
 
+//parse json
+app.use(express.json());
 
-
-app.get("/", (req, res) => {
-  res.send(" Home");
+app.get("/api/people", (req, res) => {
+  res.status(200).json({ success: true, data: people });
 });
 
-app.get("/about", (req, res) => {
-  res.send(" About page");
+app.post("/api/people", (req, res) => {
+  const { name } = req.body;
+  if (!name) {
+    return res
+      .status(400)
+      .json({ success: false, msg: "please provide name value" });
+  }
+  res.status(201).json({ success: true, person: name });
 });
 
-app.get("/products", (req, res) => {
-  res.send(" products page");
+app.post("/login", (req, res) => {
+  const { name } = req.body;
+  if (name) {
+    return res.status(200).send(`Welcome ${name}`);
+  } else res.status(401).send("Please provide Credentials");
 });
 
-app.get("/api/items", (req, res) => {
-  res.send(" items page");
-});
 app.listen(5000, () => {
   console.log(" Server is listening on port 5000.....");
 });
