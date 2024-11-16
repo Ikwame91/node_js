@@ -29,11 +29,19 @@ app.get("/api/users", (req, res) => {
   const {
     query: { filter, value },
   } = req;
-
+  //   const filter = req.query.filter;
+  // const value = req.query.value;
   //when filter and value are undefined
-
-  if (filter && value)
-    return res.send(mockUsers.filter((user) => user[filter].includes(value)));
+  if (filter && value) {
+    // Filter based on the specified property and value
+    const filteredUsers = mockUsers.filter((user) =>
+      user[filter]?.includes(value)
+    );
+    return res.send(filteredUsers);
+  }
+  // if (!mockUsers[0].hasOwnProperty(filter)) {
+  //   return res.status(400).send({ error: `Invalid filter: ${filter}` });
+  // }
   return res.send(mockUsers);
 });
 
@@ -47,22 +55,22 @@ app.get("/api/users/:id", (req, res) => {
   return res.send(finsUser);
 });
 
-app.post("/api/users", (req, res) => {
-  const { name } = req.body;
-  if (!name)
-    return res
-      .status(400)
-      .json({ success: false, msg: "please provide name value" });
-      mockUsers.push({name})
-      res.status(201).json({ success: true, data: mockUsers });
-}
-);
+// app.post("/api/users", (req, res) => {
+//   const { name } = req.body;
+//   if (!name)
+//     return res
+//       .status(400)
+//       .json({ success: false, msg: "please provide name value" });
+//       mockUsers.push({name})
+//       res.status(201).json({ success: true, data: mockUsers });
+// }
+// );
 app.post("/api/users", (req, res) => {
   console.log(req.body);
   const { body } = req;
   const newuser = { id: mockUsers[mockUsers.length - 1].id + 1, ...body };
   mockUsers.push(newuser);
-  res.status(201).send(newuser);
+  return res.status(201).send(newuser);
 });
 
 app.get("/api/products", (req, res) => {
