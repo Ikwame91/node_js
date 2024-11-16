@@ -39,6 +39,7 @@ app.get("/api/users", (req, res) => {
     );
     return res.send(filteredUsers);
   }
+  ////if a wrong filter value is passed
   // if (!mockUsers[0].hasOwnProperty(filter)) {
   //   return res.status(400).send({ error: `Invalid filter: ${filter}` });
   // }
@@ -65,17 +66,64 @@ app.get("/api/users/:id", (req, res) => {
 //       res.status(201).json({ success: true, data: mockUsers });
 // }
 // );
+
 app.post("/api/users", (req, res) => {
   console.log(req.body);
   const { body } = req;
   const newuser = { id: mockUsers[mockUsers.length - 1].id + 1, ...body };
+  //1
+  // let userIdCounter = mockUsers.length + 1;
+
+  // const newUser = { id: userIdCounter++, ...body };
+
+  //2
+  // const newUser = {
+  //   id: mockUsers.reduce((maxId, user) => Math.max(maxId, user.id), 0) + 1,
+  //   ...body
+  // };
+
   mockUsers.push(newuser);
-  return res.status(201).send(newuser);
+  return res.status(201).json({
+    success: true,
+    msg: "user created successfully",
+    data: mockUsers,
+  });
 });
 
 app.get("/api/products", (req, res) => {
   res.send(mockProducts);
 });
+
+//updates a record but partially
+app.put("/api/users/:id", (req, res) => {
+  const {
+    body,
+    params: { id },
+  } = req;
+  const parsedId = parseInt(id);
+  if (isNaN(parsedId)) return res.sendStatus(400);
+
+  // Find and update the user using map()
+  // const updatedUsers = mockUsers.map((user) => {
+  //   if (user.id === parsedId) {
+  //     return { id: parsedId, ...body }; // Update user with new data
+  //   }
+  //   return user; // Return the unmodified user
+  // });
+
+  // // If no user was updated, return 404
+  // const userUpdated = updatedUsers.some((user) => user.id === parsedId);
+  // if (!userUpdated) return res.sendStatus(404);
+
+  // // Return the updated list of users
+  // return res.status(200).json({ success: true, data: updatedUsers });
+
+  const findUserIndex = mockUsers.findIndex((user) => user.id === parsedId);
+  if (findUserIndex === -1) return res.sendStatus(404);
+  mockUsers[findUserIndex] = { id: parsedId, ...body };
+  return res.status(200).json({ success: true, data: mockUsers });
+});
+
 app.listen(PORT, () => {
   console.log(`Running on Port ${PORT}`);
 });
