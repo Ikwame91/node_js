@@ -3,12 +3,23 @@ import express, { response } from "express";
 const app = express();
 app.use(express.json());
 
-const logginnMiddleware = (req, res, next) => {
-  console.log(`${req.method}- ${req.url}`);
+// const logginnMiddleware = (req, res, next) => {
+//   console.log(`${req.method}- ${req.url}`);
+//   next();
+// };
+
+const resolveIndexByUserId = (req, res, next) => {
+  const {
+    params: { id },
+  } = req;
+  const parsedId = parseInt(id);
+  if (isNaN(parsedId)) return res.sendStatus(400);
+  const findUserIndex = mockUsers.findIndex((user) => user.id === parsedId);
+  if (findUserIndex === -1)
+    return res.status(404).json({ success: false, message: "User not found" });
+  req.findUserIndex = findUserIndex;
   next();
 };
-
-const resolveIndexByUserId =(req,res,next)=>{}
 
 const PORT = process.env.PORT || 5000;
 
@@ -30,10 +41,7 @@ const mockProducts = [
 ];
 app.get(
   "/",
-  (req, res, next) => {
-    console.log("Base Url");
-    next();
-  },
+
   (req, res) => {
     res.status(201).send({ msg: "hello world" });
   }
@@ -61,41 +69,17 @@ app.get("/api/users", (req, res) => {
   return res.send(mockUsers);
 });
 
-app.get("/api/users/:id", (req, res) => {
-  console.log(req.params);
-  const parsedId = parseInt(req.params.id);
-  if (isNaN(parsedId))
-    return res.status(400).send({ msg: "Bad request. INVALID ID" });
-  const finsUser = mockUsers.find((user) => user.id === parsedId);
-  if (!finsUser) return res.sendStatus(404);
-  return res.send(finsUser);
+app.get("/api/users/:id", resolveIndexByUserId, (req, res) => {
+  const { findUserIndex } = req;
+  const findUser = mockUsers[findUserIndex];
+  if (!findUser) return res.sendStatus(404);
+  return res.send(findUser);
 });
-
-// app.post("/api/users", (req, res) => {
-//   const { name } = req.body;
-//   if (!name)
-//     return res
-//       .status(400)
-//       .json({ success: false, msg: "please provide name value" });
-//       mockUsers.push({name})
-//       res.status(201).json({ success: true, data: mockUsers });
-// }
-// );
 
 app.post("/api/users", (req, res) => {
   console.log(req.body);
   const { body } = req;
   const newuser = { id: mockUsers[mockUsers.length - 1].id + 1, ...body };
-  //1
-  // let userIdCounter = mockUsers.length + 1;
-
-  // const newUser = { id: userIdCounter++, ...body };
-
-  //2
-  // const newUser = {
-  //   id: mockUsers.reduce((maxId, user) => Math.max(maxId, user.id), 0) + 1,
-  //   ...body
-  // };
 
   mockUsers.push(newuser);
   return res.status(201).json({
@@ -110,45 +94,22 @@ app.get("/api/products", (req, res) => {
 });
 
 //updates a record but partially
-app.put("/api/users/:id", (req, res) => {
-  const {
-    body,
-    params: { id },
-  } = req;
-  const parsedId = parseInt(id);
-  if (isNaN(parsedId)) return res.sendStatus(400);
+app.put("/api/users/:id", resolveIndexByUserId, (req, res) => {
+  const { body, findUserIndex } = req;
 
-  // Find and update the user using map()
-  // const updatedUsers = mockUsers.map((user) => {
-  //   if (user.id === parsedId) {
-  //     return { id: parsedId, ...body }; // Update user with new data
-  //   }
-  //   return user; // Return the unmodified user
-  // });
-
-  // // If no user was updated, return 404
-  // const userUpdated = updatedUsers.some((user) => user.id === parsedId);
-  // if (!userUpdated) return res.sendStatus(404);
-
-  // // Return the updated list of users
-  // return res.status(200).json({ success: true, data: updatedUsers });
-
-  const findUserIndex = mockUsers.findIndex((user) => user.id === parsedId);
-  if (findUserIndex === -1) return res.sendStatus(404);
-  mockUsers[findUserIndex] = { id: parsedId, ...body };
+  const allowedFields = ["name", "displayName"];
+  const isValid = Object.keys(body).every((key) => allowedFields.includes(key));
+  if (!isValid) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Invalid fields in request body" });
+  }
+  mockUsers[findUserIndex] = { id: mockUsers[findUserIndex].id, ...body };
   return res.status(200).json({ success: true, data: mockUsers });
 });
 
-app.patch("/api/users/:id", (req, res) => {
-  const {
-    body,
-    params: { id },
-  } = req;
-  const parsedId = parseInt(id);
-  if (isNaN(parsedId)) return res.sendStatus(400);
-  const findUserIndex = mockUsers.findIndex((user) => user.id === parsedId);
-  if (findUserIndex === -1)
-    return res.status(404).json({ success: false, message: "User not found" });
+app.patch("/api/users/:id", resolveIndexByUserId, (req, res) => {
+  const { body, findUserIndex } = req;
 
   // Validate the request body
   const allowedFields = ["name", "displayName"];
@@ -168,13 +129,9 @@ app.patch("/api/users/:id", (req, res) => {
   return res.status(200).json({ success: true, data: mockUsers });
 });
 
-app.delete("/api/users/:id", (req, res) => {
-  const { id } = req.params;
-  const parsedId = parseInt(id);
-  if (isNaN(parsedId)) return res.sendStatus(400);
-  const findUserIndex = mockUsers.findIndex((user) => user.id === parsedId);
-  if (!findUserIndex === -1)
-    return res.status(404).json({ success: false, message: "User not found" });
+app.delete("/api/users/:id", resolveIndexByUserId, (req, res) => {
+  const { findUserIndex } = req.params;
+
   const deletedUser = mockUsers.splice(findUserIndex, 1);
   return res.status(200).json({
     success: true,
