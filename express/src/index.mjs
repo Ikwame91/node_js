@@ -2,6 +2,14 @@ import express, { response } from "express";
 
 const app = express();
 app.use(express.json());
+
+const logginnMiddleware = (req, res, next) => {
+  console.log(`${req.method}- ${req.url}`);
+  next();
+};
+
+const resolveIndexByUserId =(req,res,next)=>{}
+
 const PORT = process.env.PORT || 5000;
 
 const mockUsers = [
@@ -20,9 +28,16 @@ const mockProducts = [
   { id: 345, name: "chicken", price: "89" },
   { id: 678, name: "aknson", price: "37" },
 ];
-app.get("/", (req, res) => {
-  res.status(201).send({ msg: "hello world" });
-});
+app.get(
+  "/",
+  (req, res, next) => {
+    console.log("Base Url");
+    next();
+  },
+  (req, res) => {
+    res.status(201).send({ msg: "hello world" });
+  }
+);
 
 app.get("/api/users", (req, res) => {
   console.log(req.query);
@@ -122,6 +137,50 @@ app.put("/api/users/:id", (req, res) => {
   if (findUserIndex === -1) return res.sendStatus(404);
   mockUsers[findUserIndex] = { id: parsedId, ...body };
   return res.status(200).json({ success: true, data: mockUsers });
+});
+
+app.patch("/api/users/:id", (req, res) => {
+  const {
+    body,
+    params: { id },
+  } = req;
+  const parsedId = parseInt(id);
+  if (isNaN(parsedId)) return res.sendStatus(400);
+  const findUserIndex = mockUsers.findIndex((user) => user.id === parsedId);
+  if (findUserIndex === -1)
+    return res.status(404).json({ success: false, message: "User not found" });
+
+  // Validate the request body
+  const allowedFields = ["name", "displayName"];
+  const isValid = Object.keys(body).every((key) => allowedFields.includes(key));
+  if (!isValid)
+    return res
+      .status(400)
+      .json({ success: false, message: "Invalid fields in request body" });
+
+  //check for empty body
+  if (!Object.keys(body).length)
+    return res
+      .status(400)
+      .json({ success: false, message: "Request body cannot be empty" });
+
+  mockUsers[findUserIndex] = { ...mockUsers[findUserIndex], ...body };
+  return res.status(200).json({ success: true, data: mockUsers });
+});
+
+app.delete("/api/users/:id", (req, res) => {
+  const { id } = req.params;
+  const parsedId = parseInt(id);
+  if (isNaN(parsedId)) return res.sendStatus(400);
+  const findUserIndex = mockUsers.findIndex((user) => user.id === parsedId);
+  if (!findUserIndex === -1)
+    return res.status(404).json({ success: false, message: "User not found" });
+  const deletedUser = mockUsers.splice(findUserIndex, 1);
+  return res.status(200).json({
+    success: true,
+    message: "User deleted successfully",
+    data: deletedUser,
+  });
 });
 
 app.listen(PORT, () => {
