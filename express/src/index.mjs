@@ -112,27 +112,81 @@ app.get("/api/products/:id", resolveIndexByProductID, (req, res) => {
   return res.json(product);
 });
 
-app.get("/api/products", (req, res) => {
-  const { filter, value } = req.query;
-
-  // If filter and value are provided, filter the products
-  if (filter && value) {
-    const filteredProducts = mockProducts.filter((product) =>
-      product[filter]?.toString().includes(value.toString())
-    );
-    return res.json(filteredProducts);
-  }
-
-  // Return all products if no filter is applied
-  return res.json(mockProducts);
-});
-
 app.get("/api/users/:id", resolveIndexByUserId, (req, res) => {
   const { findUserIndex } = req;
   const findUser = mockUsers[findUserIndex];
   if (!findUser) return res.sendStatus(404);
   return res.send(findUser);
 });
+
+app.get(
+  "/api/products",
+  //query()--midleware/validator Validates query parameters URL Query	filter=name
+  query("filter")
+    .isString()
+    .notEmpty()
+    .withMessage("cannot be empty")
+    .isLength({ min: 3, max: 10 })
+    .withMessage("must be between 3-10 characters"),
+  (req, res) => {
+    const result = validationResult(req);
+    console.log(result);
+
+    if (!result.isEmpty()) {
+      return res.status(400).send({ errors: result.array() });
+    }
+
+    const { filter, value } = req.query;
+
+    // If filter and value are provided, filter the products
+    if (filter && value) {
+      const filteredProducts = mockProducts.filter((product) =>
+        product[filter]?.toString().includes(value.toString())
+      );
+      return res.json(filteredProducts);
+    }
+
+    // Return all products if no filter is applied
+    return res.json(mockProducts);
+  }
+);
+
+app.post(
+  "/api/products",
+  //body--midleware/validator	Validates request body data	JSON/Body	{ "name": "...", "dsplayname":"...." }
+  [
+    body("name")
+      .isString()
+      .notEmpty()
+      .withMessage("cannot be empty")
+      .isLength({ min: 3, max: 15 })
+      .withMessage("must be between 5-36 characters"),
+    body("price").notEmpty(),
+  ],
+  (req, res) => {
+    const result = validationResult(req);
+    console.log(result);
+
+    if (!result.isEmpty()) {
+      return res.status(400).send({ errors: result.array() });
+    }
+
+    // const { body } = req; changed body to data assignement matched data function
+    const data = matchedData(req);
+    console.log(data);
+
+    const newProducts = {
+      id: mockProducts[mockProducts.length - 1].id + 1,
+      ...data,
+    };
+    mockProducts.push(newProducts);
+    return res.status(201).json({
+      success: true,
+      msg: "user created successfully",
+      data: mockProducts,
+    });
+  }
+);
 
 app.post("/api/users", checkSchema(createuservalidationSchema), (req, res) => {
   const result = validationResult(req);
@@ -157,7 +211,6 @@ app.post("/api/users", checkSchema(createuservalidationSchema), (req, res) => {
   });
 });
 
-//updates a record but partially
 app.put("/api/users/:id", resolveIndexByUserId, (req, res) => {
   const { body, findUserIndex } = req;
 
@@ -172,6 +225,7 @@ app.put("/api/users/:id", resolveIndexByUserId, (req, res) => {
   return res.status(200).json({ success: true, data: mockUsers });
 });
 
+//updates a record but partially
 app.patch("/api/users/:id", resolveIndexByUserId, (req, res) => {
   const { body, findUserIndex } = req;
 
