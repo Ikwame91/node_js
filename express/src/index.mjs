@@ -7,6 +7,7 @@ import {
   checkSchema,
 } from "express-validator";
 import { createuservalidationSchema } from "./utils/validationSchema.mjs";
+
 const app = express();
 app.use(express.json());
 
@@ -14,7 +15,6 @@ app.use(express.json());
 //   console.log(`${req.method}- ${req.url}`);
 //   next();
 // };
-
 
 //middleware
 const resolveIndexByUserId = (req, res, next) => {
@@ -27,6 +27,23 @@ const resolveIndexByUserId = (req, res, next) => {
   if (findUserIndex === -1)
     return res.status(404).json({ success: false, message: "User not found" });
   req.findUserIndex = findUserIndex;
+  next();
+};
+
+const resolveIndexByProductID = (req, res, next) => {
+  const { id } = req.params;
+
+  const productId = parseInt(id);
+  if (isNaN(productId)) return res.sendStatus(400);
+  const findproductIndex = mockProducts.findIndex(
+    (product) => product.id === productId
+  );
+  if (findproductIndex === -1)
+    return res
+      .status(404)
+      .json({ success: false, message: "product not found" });
+  req.findproductIndex = findproductIndex;
+
   next();
 };
 
@@ -44,9 +61,9 @@ const mockUsers = [
 ];
 
 const mockProducts = [
-  { id: 123, name: "fowl", price: "90" },
-  { id: 345, name: "chicken", price: "89" },
-  { id: 678, name: "aknson", price: "37" },
+  { id: 111, name: "fowl", price: "90" },
+  { id: 112, name: "chicken", price: "89" },
+  { id: 113, name: "aknson", price: "37" },
 ];
 app.get(
   "/",
@@ -89,6 +106,26 @@ app.get(
     return res.send(mockUsers);
   }
 );
+app.get("/api/products/:id", resolveIndexByProductID, (req, res) => {
+  const { findproductIndex } = req;
+  const product = mockProducts[findproductIndex];
+  return res.json(product);
+});
+
+app.get("/api/products", (req, res) => {
+  const { filter, value } = req.query;
+
+  // If filter and value are provided, filter the products
+  if (filter && value) {
+    const filteredProducts = mockProducts.filter((product) =>
+      product[filter]?.toString().includes(value.toString())
+    );
+    return res.json(filteredProducts);
+  }
+
+  // Return all products if no filter is applied
+  return res.json(mockProducts);
+});
 
 app.get("/api/users/:id", resolveIndexByUserId, (req, res) => {
   const { findUserIndex } = req;
@@ -97,35 +134,27 @@ app.get("/api/users/:id", resolveIndexByUserId, (req, res) => {
   return res.send(findUser);
 });
 
-app.post(
-  "/api/users",
-  checkSchema(createuservalidationSchema),
-  (req, res) => {
-    const result = validationResult(req);
-    console.log(result);
-    // result.isEmpty
-    // returns true if there are no errors
-    // result is not empty
-    if (!result.isEmpty()) {
-      return res.status(400).send({ errors: result.array() });
-    }
-
-    const data = matchedData(req);
-    console.log(data);
-
-    const newuser = { id: mockUsers[mockUsers.length - 1].id + 1, ...data };
-
-    mockUsers.push(newuser);
-    return res.status(201).json({
-      success: true,
-      msg: "user created successfully",
-      data: mockUsers,
-    });
+app.post("/api/users", checkSchema(createuservalidationSchema), (req, res) => {
+  const result = validationResult(req);
+  console.log(result);
+  // result.isEmpty
+  // returns true if there are no errors
+  // result is not empty
+  if (!result.isEmpty()) {
+    return res.status(400).send({ errors: result.array() });
   }
-);
 
-app.get("/api/products", (req, res) => {
-  res.send(mockProducts);
+  const data = matchedData(req);
+  console.log(data);
+
+  const newuser = { id: mockUsers[mockUsers.length - 1].id + 1, ...data };
+
+  mockUsers.push(newuser);
+  return res.status(201).json({
+    success: true,
+    msg: "user created successfully",
+    data: mockUsers,
+  });
 });
 
 //updates a record but partially
