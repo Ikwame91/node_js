@@ -2,7 +2,7 @@ export const createuservalidationSchema = {
   name: {
     isLength: {
       options: {
-        min: 5,
+        min: 4,
         max: 32,
       },
       errorMessage:
