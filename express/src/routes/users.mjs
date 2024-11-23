@@ -1,8 +1,13 @@
 import { Router } from "express";
-import { query, validationResult, checkSchema,matchedData } from "express-validator";
+import {
+  query,
+  validationResult,
+  checkSchema,
+  matchedData,
+} from "express-validator";
 import { mockUsers } from "../utils/constants.mjs";
 import { createuservalidationSchema } from "../utils/validationSchema.mjs";
-import { resolveIndexByUserId } from "../utils/middleware.mjs";
+import { resolveIndexByUserId } from "../utils/user_middleware.mjs";
 const router = Router();
 
 router.get(
@@ -44,8 +49,40 @@ router.get("/api/users/:id", resolveIndexByUserId, (req, res) => {
   const findUser = mockUsers[findUserIndex];
   if (!findUser) return res.sendStatus(404);
   return res.send(findUser);
-})
+});
 
+router.put("/api/users/:id", resolveIndexByUserId, (req, res) => {
+  const { body, findUserIndex } = req;
+
+  const allowedFields = ["name", "displayName"];
+  const isValid = Object.keys(body).every((key) => allowedFields.includes(key));
+  if (!isValid) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Invalid fields in request body" });
+  }
+  mockUsers[findUserIndex] = { id: mockUsers[findUserIndex].id, ...body };
+  return res.status(200).json({ success: true, data: mockUsers });
+});
+
+//updates a record but partially
+router.patch("/api/users/:id", resolveIndexByUserId, (req, res) => {
+  const { body, findUserIndex } = req;
+
+  mockUsers[findUserIndex] = { ...mockUsers[findUserIndex], ...body };
+  return res.status(200).json({ success: true, data: mockUsers });
+});
+
+router.delete("/api/users/:id", resolveIndexByUserId, (req, res) => {
+  const { findUserIndex } = req.params;
+
+  const deletedUser = mockUsers.splice(findUserIndex, 1);
+  return res.status(200).json({
+    success: true,
+    message: "User deleted successfully",
+    data: deletedUser,
+  });
+});
 
 router.post(
   "/api/users",
@@ -75,3 +112,17 @@ router.post(
 );
 
 export default router;
+
+// Validate the request body
+// const allowedFields = ["name", "displayName"];
+// const isValid = Object.keys(body).every((key) => allowedFields.includes(key));
+// if (!isValid)
+//   return res
+//     .status(400)
+//     .json({ success: false, message: "Invalid fields in request body" });
+
+// //check for empty body
+// if (!Object.keys(body).length)
+//   return res
+//     .status(400)
+//     .json({ success: false, message: "Request body cannot be empty" });
